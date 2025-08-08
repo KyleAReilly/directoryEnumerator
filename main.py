@@ -1,34 +1,43 @@
-# Import the 'requests' library to make HTTP requests
 import requests
-import sys  # Import the 'sys' library for command-line arguments
 
-# Read a list of directory names from a file named 'wordlist2.txt'
-sub_list = open("wordlist2.txt").read()
+# Prompt user for URL once
+user_input = input("Please enter a URL: ").strip()
 
-# Split the contents of the file into a list of directory names
-directories = sub_list.splitlines()
+# Sanitize URL input
+if user_input.startswith("http://") or user_input.startswith("https://"):
+    url = user_input.rstrip("/")
+else:
+    url = "http://" + user_input
 
-# Loop through each directory name in the list
-for dir in directories:
-    
-    # Prompt the user for a URL and then enumerate it
-    # user_input = input("Please enter a URL:  ")
-    # if user_input.startswith("http://") or user_input.startswith("https://"):
-    #     url = user_input
-    # else:
-    #     url = "http://" + user_input  # Add "http://" if it's missing
-    # print(url)
+print(f"\n🔍 Starting enumeration on: {url}\n")
 
-    # Construct the URL to check (assuming the target domain is provided as a command-line argument. Replace sys.argv[1] with variable url to use prompted for url
-    dir_enum = f"http://{sys.argv[1]}/{dir}.html"
+# Load wordlist
+with open("wordlist2.txt", "r") as file:
+    directories = file.read().splitlines()
 
-    # Send an HTTP GET request to the constructed URL
-    r = requests.get(dir_enum)
+total = len(directories)
+valid_dirs = []  # Store valid URLs here
 
-    # Check the HTTP response status code
-    if r.status_code == 404:
-        # If the status code is 404 (Not Found), the directory does not exist
-        pass
-    else:
-        # If the status code is not 404, the directory likely exists
-        print("Valid directory:", dir_enum)
+# Start enumeration
+for i, dir in enumerate(directories, start=1):
+    target_url = f"{url}/{dir}.html"
+
+    try:
+        r = requests.get(target_url)
+
+        if r.status_code == 404:
+            print(f"[{i}/{total}] ❌ Not found: {target_url}")
+        else:
+            print(f"[{i}/{total}] ✅ Found: {target_url}")
+            valid_dirs.append(target_url)
+
+    except requests.exceptions.RequestException as e:
+        print(f"[{i}/{total}] ⚠️ Error: {target_url} - {e}")
+
+# Final summary
+print("\n📋 Summary of valid directories found:")
+if valid_dirs:
+    for valid in valid_dirs:
+        print(f" - {valid}")
+else:
+    print("No valid directories were found.")
